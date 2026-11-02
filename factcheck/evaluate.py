@@ -41,6 +41,16 @@ def confusion(gold: list[str], pred: list[str]) -> list[list[int]]:
     return m
 
 
+def cohen_kappa(a: list[str], b: list[str]) -> float:
+    """Cohen's kappa between two label sequences over LABELS."""
+    n = len(a)
+    if n == 0:
+        return 0.0
+    po = sum(x == y for x, y in zip(a, b, strict=True)) / n
+    pe = sum((a.count(lab) / n) * (b.count(lab) / n) for lab in LABELS)
+    return 1.0 if pe == 1 else (po - pe) / (1 - pe)
+
+
 def recall_hits(gold_sets: list[set], retrieved: list[list], k: int) -> list[int]:
     """1 per claim if any gold sentence id is in the top k, else 0."""
     return [int(bool(g & set(r[:k]))) for g, r in zip(gold_sets, retrieved, strict=True)]
