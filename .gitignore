@@ -1,0 +1,23 @@
+# Reference material for Claude Code only; never commit
+_claude_reference/
+
+# Local config (contains the SSD path)
+config.local.toml
+
+# Data, weights, caches, generated outputs (large files live on the external SSD)
+data/raw/
+data/processed/
+*.pkl
+*.safetensors
+*.bin
+*.parquet
+*.jsonl.gz
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# macOS
+.DS_Store

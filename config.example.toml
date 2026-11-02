@@ -1,0 +1,11 @@
+# Copy to config.local.toml (gitignored) and set your own path,
+# or set the FACTCHECK_DATA environment variable instead.
+[paths]
+data_dir = "/path/to/external/ssd/factcheck-data"
+
+[verdict]
+model = "cross-encoder/nli-deberta-v3-xsmall"
+top_k = 5
+
+[run]
+seed = 13
