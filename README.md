@@ -48,7 +48,7 @@ check("The Eiffel Tower is in Berlin", evidence=["The Eiffel Tower is in Paris."
 | Spans | Rules: numbers, dates and capitalised names in the claim that are missing from the deciding evidence sentence | `factcheck/spans.py` |
 | Evaluate | Macro-F1, per-class P/R, confusion matrix, recall@k, FEVER-style strict score, span character F1, bootstrap 95% CIs, majority and claim-only baselines | `factcheck/evaluate.py`, `factcheck/run.py` |
 
-Docs: [data card](docs/data_card.md), [preprocessing log](docs/preprocessing-log.md), [decisions](DECISIONS.md), [work log](WORKLOG.md).
+Docs: [data card](docs/data_card.md), [preprocessing log](docs/preprocessing-log.md), [demo walkthrough](docs/demo-walkthrough.md), [decisions](DECISIONS.md), [work log](WORKLOG.md).
 
 ## Headline results
 The full tables (per-class P/R, confusion matrices, examples and caveats) are in [`results/results.md`](results/results.md) (FEVER dev), [`results/results-fever-test.md`](results/results-fever-test.md) and [`results/results-climate-test.md`](results/results-climate-test.md). Bootstrap: 1,000 resamples, 95% percentile CI. The labels are the released crowd labels; this project did no re-annotation.
@@ -71,8 +71,8 @@ How to read these:
 - **Throughput:** 76–110 claim-evidence pairs/s on an Apple-silicon CPU. That is above 5 pairs/s, so dev evaluation was **not capped**.
 
 ## What was not built
-- **Self-relabel agreement study (S0-3).** There are no human relabels, so no agreement number is reported.
-- **Slides (S0-5).** Out of scope for the code session.
+- **Self-relabel agreement study (S0-3).** The blind sheets and scoring are ready (`data/relabel/`, `python -m factcheck.relabel`), but no labels have been entered yet, so no agreement number is reported. The two passes need days between them (S1-4).
+- **Slides (S0-5).** The 9-slide demo deck with a limits slide is kept outside the repo as a Slides artifact. Its timing, live commands and fallbacks are in [docs/demo-walkthrough.md](docs/demo-walkthrough.md).
 - **Full Wikipedia retrieval.** `--full-wiki` exists but stops with a message. The dump is about 1.7 GB zipped and 7.25 GB expanded, and needs approval before downloading.
 - **Negation, verb swaps and common-noun swaps in spans.** The span rules don't handle these. "Einstein did **not** win the Nobel Prize" and "for the top **baseball** clubs" get the right label but no span.
 - **No training or fine-tuning**, no GPU code, no LLM APIs, no web UI, no calibrated confidence.

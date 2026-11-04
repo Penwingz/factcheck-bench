@@ -26,3 +26,20 @@
 - NEI claims predicted REFUTES are the main error. Try a relevance gate (minimum BM25 score or entity overlap) before trusting a contradiction; tune it on dev.
 - A human-labelled span set, and the self-relabel agreement study (S0-3).
 - Slides with a limits slide (S0-5).
+
+## 2026-11-14 (second session)
+**Review**
+- Bare `pytest`, the command in the brief, failed at collection because `factcheck` wasn't on `sys.path`. Added `pyproject.toml` with pytest `pythonpath`; it now passes.
+- Rule 3 gap: per-class P/R/F1 and span P/R had no CIs. Added `evaluate.bootstrap_many`; every metric in `results/` now has a 95% CI.
+- Lint (ruff E, F, I, B): fixed import order and long lines; every `zip()` is now `strict=True`. No unused imports or undefined names were found.
+- Results regenerated. Thresholds unchanged (0.95/0.99, tuned on FEVER dev); headline numbers unchanged.
+
+**Changed**
+- S0-3: `factcheck/relabel.py` exports blind sheets (100 stratified FEVER-dev claims, passes 1 and 2 in different orders) to `data/relabel/` and scores Cohen's κ with CIs into `docs/label_quality.md`. No labels entered yet.
+- S0-5: a 9-slide demo deck with a limits slide (Slides artifact, outside the repo), plus `docs/demo-walkthrough.md` with timing, tested live commands and fallbacks.
+- Tests: 53, all passing.
+
+**Next**
+- Fill `data/relabel/pass1.csv`; fill `pass2.csv` several days later; run `python -m factcheck.relabel score`.
+- Relevance gate for contradictions (tune on dev).
+- Replace the deck placeholders: presenter name, course and group.
