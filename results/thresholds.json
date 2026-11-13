@@ -1,0 +1,7 @@
+{
+  "supports": 0.95,
+  "refutes": 0.995,
+  "tuned_on": "fever-dev",
+  "metric": "macro-F1",
+  "date": "2026-11-14"
+}

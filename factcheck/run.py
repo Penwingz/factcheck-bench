@@ -351,11 +351,13 @@ def render(m, lm, rows, retrieved, prob_sets, pred, hand, e2e, th) -> str:
         p = ", ".join(r_.claim[a:b] for a, b in x["wrong_spans"]) or "-"
         L.append(f"| {r_.claim} | {r_.label} | {x['label']} | {g} | {p} |")
     L += ["", "## 5. Worked examples (tuned system)", ""]
-    shown = 0
+    shown, used_sources = 0, set()
     for want_correct in (True, False):
         for row, hits, probs, p in zip(rows, retrieved, prob_sets, pred):
-            if (p == row.label) != want_correct or row.is_opinion or not hits:
+            if ((p == row.label) != want_correct or row.is_opinion or not hits
+                    or row.source_id in used_sources):
                 continue
+            used_sources.add(row.source_id)
             res_label, best = aggregate(probs, th)
             e = hits[best] if best >= 0 else hits[0]
             ok = "correct" if want_correct else "wrong"
