@@ -14,7 +14,7 @@ data/processed/
 *.jsonl.gz
 
 # Python
-.venv/
+.venv
 __pycache__/
 *.pyc
 .pytest_cache/
