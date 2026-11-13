@@ -35,6 +35,7 @@ check("The Eiffel Tower is in Berlin", evidence=["The Eiffel Tower is in Paris."
 - When the quote pipeline passes the passage it found as `evidence`, **retrieval is skipped**. That makes this repo the "does the new usage match the original passage" step. Without `evidence`, the claim is checked against the top 5 BM25 sentences from the pool.
 - `scores` are the raw NLI softmax probabilities for the deciding evidence sentence. They are **uncalibrated** and are **not a confidence score**; turning them into one is the confidence pipeline's job.
 - `wrong_spans` are `[start, end)` offsets into the claim string. They are filled only when the label is REFUTES.
+- If the claim is flagged as an opinion, it isn't checked: `label` is NOT ENOUGH INFO, `is_opinion` is true, `scores` is `None`, and `evidence_used` is empty.
 - `check_text(text, evidence=None)` splits free text into claims first and adds `claim_start` / `claim_end` to each result.
 
 ## What was built
@@ -82,11 +83,10 @@ How to read these:
 cp config.example.toml config.local.toml       # set data_dir to a folder on the external drive
 # or: export FACTCHECK_DATA=/path/to/drive/folder
 uv venv -p 3.12 .venv && uv pip install -p .venv/bin/python \
-    --extra-index-url https://download.pytorch.org/whl/cpu \
-    torch transformers rank_bm25 scikit-learn numpy pytest pyarrow
+    --extra-index-url https://download.pytorch.org/whl/cpu -e ".[dev]"   # deps in pyproject.toml
 .venv/bin/python -m factcheck.ingest       # ~110 MB of data into <data_dir>/raw
 .venv/bin/python -m factcheck.preprocess   # splits + docs/preprocessing-log.md
-.venv/bin/python -m pytest                 # 47 tests; check() tests download the model (~280 MB)
+.venv/bin/pytest                           # check() tests download the model (~280 MB)
 .venv/bin/python -m factcheck.run --split dev                    # tunes thresholds -> results/results.md
 .venv/bin/python -m factcheck.run --split test                   # uses dev thresholds
 .venv/bin/python -m factcheck.run --split test --dataset climate # out-of-domain, eval only

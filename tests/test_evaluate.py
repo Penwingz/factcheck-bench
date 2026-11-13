@@ -1,8 +1,18 @@
 import pytest
 
-from factcheck.evaluate import (accuracy, bootstrap_ci, claim_only_baseline, confusion,
-                                fever_hits, macro_f1, majority_baseline, mean, per_class_prf,
-                                recall_hits, span_char_f1)
+from factcheck.evaluate import (
+    accuracy,
+    bootstrap_ci,
+    claim_only_baseline,
+    confusion,
+    fever_hits,
+    macro_f1,
+    majority_baseline,
+    mean,
+    per_class_prf,
+    recall_hits,
+    span_char_f1,
+)
 
 S, R, N = "SUPPORTS", "REFUTES", "NOT ENOUGH INFO"
 
@@ -69,3 +79,11 @@ def test_claim_only_baseline_learns_cue_words():
     train = ["x is not y"] * 5 + ["x is y"] * 5
     labels = [R] * 5 + [S] * 5
     assert claim_only_baseline(train, labels, ["a is not b", "a is b"]) == [R, S]
+
+
+def test_bootstrap_many_matches_bootstrap_ci():
+    from factcheck.evaluate import bootstrap_many
+    items = [0, 1] * 50
+    many = bootstrap_many(lambda it: {"m": mean(it), "c": 1.0}, items)
+    assert many["m"] == bootstrap_ci(mean, items)  # same seed, same resamples
+    assert many["c"] == (1.0, 1.0, 1.0)

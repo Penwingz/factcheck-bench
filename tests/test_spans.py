@@ -1,5 +1,5 @@
-from factcheck.ingest import load
 from factcheck.config import REPO
+from factcheck.ingest import load
 from factcheck.spans import find
 
 

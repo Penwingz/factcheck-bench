@@ -1,0 +1,30 @@
+[project]
+name = "factcheck"
+version = "0.1.0"
+description = "CPU-only claim checker: BM25 evidence retrieval, NLI verdicts, rule-based wrong spans"
+requires-python = ">=3.12"
+dependencies = [
+    "torch",
+    "transformers",
+    "huggingface_hub",
+    "rank_bm25",
+    "scikit-learn",
+    "numpy",
+    "pyarrow",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["factcheck"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]

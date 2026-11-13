@@ -5,7 +5,7 @@
 ## Run facts
 - Split: **fever-dev**, claims evaluated: **397** (no cap; throughput was above 5 pairs/s)
 - Labels: FEVER crowd labels, 1 label per claim as released. No re-annotation by this project.
-- NLI throughput: **110.3 claim-evidence pairs/s** on CPU (arm64 Darwin, batch 32, cross-encoder/nli-deberta-v3-xsmall). Retrieval: 74 queries/s.
+- NLI throughput: **106.6 claim-evidence pairs/s** on CPU (arm64 Darwin, batch 32, cross-encoder/nli-deberta-v3-xsmall). Retrieval: 77 queries/s.
 - Thresholds used for the tuned system: SUPPORTS if max P(entailment) ≥ 0.95, REFUTES if max P(contradiction) ≥ 0.99, else NOT ENOUGH INFO. Tuned for macro-F1 on **FEVER dev only**.
 - Claims flagged as opinion (predicted NOT ENOUGH INFO without checking): 3
 
@@ -23,13 +23,15 @@
 
 ### NLI system, thresholds 0.5/0.5 (untuned)
 
+Per class, value [95% CI]; n = 397, split fever-dev, annotators: FEVER crowd labels, 1 label per claim as released.
+
 | Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
-| SUPPORTS | 0.827 | 0.648 | 0.726 | 125 |
-| REFUTES | 0.478 | 0.943 | 0.635 | 140 |
-| NOT ENOUGH INFO | 0.609 | 0.106 | 0.181 | 132 |
+| SUPPORTS | 0.827 [0.747, 0.897] | 0.648 [0.563, 0.726] | 0.726 [0.654, 0.787] | 125 |
+| REFUTES | 0.478 [0.417, 0.535] | 0.943 [0.902, 0.978] | 0.635 [0.579, 0.684] | 140 |
+| NOT ENOUGH INFO | 0.609 [0.409, 0.793] | 0.106 [0.054, 0.157] | 0.181 [0.096, 0.256] | 132 |
 
-Confusion matrix (rows = gold, columns = predicted):
+Confusion matrix, counts (rows = gold, columns = predicted; n = 397):
 
 | gold \ pred | SUPPORTS | REFUTES | NEI |
 |---|---|---|---|
@@ -39,13 +41,15 @@ Confusion matrix (rows = gold, columns = predicted):
 
 ### NLI system, thresholds 0.95/0.99 (tuned on FEVER dev)
 
+Per class, value [95% CI]; n = 397, split fever-dev, annotators: FEVER crowd labels, 1 label per claim as released.
+
 | Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
-| SUPPORTS | 0.837 | 0.656 | 0.735 | 125 |
-| REFUTES | 0.589 | 0.686 | 0.634 | 140 |
-| NOT ENOUGH INFO | 0.529 | 0.545 | 0.537 | 132 |
+| SUPPORTS | 0.837 [0.762, 0.905] | 0.656 [0.568, 0.736] | 0.735 [0.663, 0.797] | 125 |
+| REFUTES | 0.589 [0.510, 0.661] | 0.686 [0.607, 0.767] | 0.634 [0.567, 0.700] | 140 |
+| NOT ENOUGH INFO | 0.529 [0.445, 0.612] | 0.545 [0.465, 0.631] | 0.537 [0.465, 0.602] | 132 |
 
-Confusion matrix (rows = gold, columns = predicted):
+Confusion matrix, counts (rows = gold, columns = predicted; n = 397):
 
 | gold \ pred | SUPPORTS | REFUTES | NEI |
 |---|---|---|---|
@@ -55,13 +59,15 @@ Confusion matrix (rows = gold, columns = predicted):
 
 ### Majority class (from FEVER train)
 
+Per class, value [95% CI]; n = 397, split fever-dev, annotators: FEVER crowd labels, 1 label per claim as released.
+
 | Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
-| SUPPORTS | 0.315 | 1.000 | 0.479 | 125 |
-| REFUTES | 0.000 | 0.000 | 0.000 | 140 |
-| NOT ENOUGH INFO | 0.000 | 0.000 | 0.000 | 132 |
+| SUPPORTS | 0.315 [0.272, 0.360] | 1.000 [1.000, 1.000] | 0.479 [0.428, 0.530] | 125 |
+| REFUTES | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 140 |
+| NOT ENOUGH INFO | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 132 |
 
-Confusion matrix (rows = gold, columns = predicted):
+Confusion matrix, counts (rows = gold, columns = predicted; n = 397):
 
 | gold \ pred | SUPPORTS | REFUTES | NEI |
 |---|---|---|---|
@@ -71,13 +77,15 @@ Confusion matrix (rows = gold, columns = predicted):
 
 ### Claim-only TF-IDF + LR (trained on FEVER train)
 
+Per class, value [95% CI]; n = 397, split fever-dev, annotators: FEVER crowd labels, 1 label per claim as released.
+
 | Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
-| SUPPORTS | 0.323 | 0.256 | 0.286 | 125 |
-| REFUTES | 0.611 | 0.493 | 0.545 | 140 |
-| NOT ENOUGH INFO | 0.324 | 0.455 | 0.379 | 132 |
+| SUPPORTS | 0.323 [0.228, 0.409] | 0.256 [0.179, 0.329] | 0.286 [0.203, 0.357] | 125 |
+| REFUTES | 0.611 [0.525, 0.695] | 0.493 [0.411, 0.573] | 0.545 [0.472, 0.614] | 140 |
+| NOT ENOUGH INFO | 0.324 [0.260, 0.390] | 0.455 [0.368, 0.541] | 0.379 [0.312, 0.447] | 132 |
 
-Confusion matrix (rows = gold, columns = predicted):
+Confusion matrix, counts (rows = gold, columns = predicted; n = 397):
 
 | gold \ pred | SUPPORTS | REFUTES | NEI |
 |---|---|---|---|
@@ -106,11 +114,14 @@ The public datasets have no span labels, so spans are scored only on `data/span_
 
 | Metric | Value | 95% CI | n | Split | Annotators |
 |---|---|---|---|---|---|
-| Span char F1, rule only, given gold evidence | 0.856 | [0.640, 1.000] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
-| Span char F1, end-to-end check() with gold evidence | 0.647 | [0.325, 0.857] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
+| Span char f1, rule only, given gold evidence | 0.856 | [0.640, 1.000] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
+| Span char precision, rule only, given gold evidence | 1.000 | [1.000, 1.000] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
+| Span char recall, rule only, given gold evidence | 0.748 | [0.471, 1.000] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
+| Span char f1, end-to-end check() with gold evidence | 0.647 | [0.325, 0.857] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
+| Span char precision, end-to-end check() with gold evidence | 1.000 | [1.000, 1.000] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
+| Span char recall, end-to-end check() with gold evidence | 0.478 | [0.194, 0.750] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
 
-- Rule only: precision 1.000, recall 0.748.
-- End to end: precision 1.000, recall 0.478; spans appear only when the label is REFUTES. Label accuracy on these 20 claims: 0.750.
+End to end, spans appear only when the label is REFUTES. Label accuracy of check() on these 20 claims: 0.750.
 
 | Claim | Gold label | Predicted | Gold span | Predicted spans |
 |---|---|---|---|---|
