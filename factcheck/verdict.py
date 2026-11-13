@@ -83,7 +83,8 @@ def aggregate(probs: np.ndarray, th: Thresholds) -> tuple[str, int]:
 def tune(prob_sets: list[np.ndarray], gold: list[str], grid=None) -> tuple[Thresholds, float]:
     """Grid-search thresholds for macro-F1. Call this on the dev split only."""
     from .evaluate import macro_f1
-    grid = grid if grid is not None else np.round(np.arange(0.3, 0.96, 0.05), 2)
+    if grid is None:
+        grid = np.concatenate([np.round(np.arange(0.3, 0.96, 0.05), 2), [0.97, 0.98, 0.99, 0.995]])
     best = (Thresholds(), -1.0)
     for ts in grid:
         for tr in grid:
