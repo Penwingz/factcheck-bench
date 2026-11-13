@@ -10,7 +10,7 @@ Usage: python -m factcheck.ingest
 import json
 import random
 from collections import Counter, defaultdict
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
 from . import LABELS, SCHEMA_VERSION, config
@@ -64,10 +64,17 @@ def validate(row: Row, require_refutes_span: bool = False) -> None:
 
 
 def load(path: Path, require_refutes_span: bool = False) -> list[Row]:
+    """Read and validate rows. A free-text `note` column (used in the hand-built
+    span set) is allowed and dropped; any other unknown field is an error."""
+    names = {f.name for f in fields(Row)}
     rows = []
     with open(path) as f:
         for line in f:
-            row = Row(**json.loads(line))
+            d = json.loads(line)
+            d.pop("note", None)
+            if set(d) - names:
+                raise ValidationError(f"unknown fields {set(d) - names}")
+            row = Row(**d)
             validate(row, require_refutes_span)
             rows.append(row)
     return rows
