@@ -100,8 +100,10 @@ OPINION_PATTERNS = [
     r"\bin my (opinion|view)\b",
     r"\b(imo|imho)\b",
     r"\b(should|ought to)\b",
-    r"\b(best|worst|greatest)\b(?![- ](selling|known|friend|picture|actor|actress|director|album|song|film|supporting|original|new|animated|foreign|documentary))",
-    r"\b(amazing|awesome|terrible|awful|overrated|underrated|beautiful|ugly|boring|disgusting|wonderful|brilliant|stupid)\b",
+    r"\b(best|worst|greatest)\b(?![- ](selling|known|friend|picture|actor|actress|director"
+    r"|album|song|film|supporting|original|new|animated|foreign|documentary))",
+    r"\b(amazing|awesome|terrible|awful|overrated|underrated|beautiful|ugly|boring"
+    r"|disgusting|wonderful|brilliant|stupid)\b",
     r"\b(favou?rite)\b",
 ]
 _OPINION = re.compile("|".join(OPINION_PATTERNS), re.IGNORECASE)
@@ -167,7 +169,7 @@ def dedup(rows: list[Row], threshold: float = 0.9):
     for r in kept:
         sh = _shingles(r.claim)
         match = None
-        for other, osh in zip(final, shingles):
+        for other, osh in zip(final, shingles, strict=True):
             inter = len(sh & osh)
             if inter and other.label == r.label and inter / len(sh | osh) >= threshold:
                 match = other
@@ -286,7 +288,8 @@ def main() -> None:
     log += ["## 5. Split by source",
             f"Whole `source_id` groups (Wikipedia page) are assigned with seed {SEED} and "
             "target ratios 70/15/15. No source appears in two splits.",
-            "", "| split | claims | sources | SUPPORTS | REFUTES | NEI |", "|---|---|---|---|---|---|"]
+            "", "| split | claims | sources | SUPPORTS | REFUTES | NEI |",
+            "|---|---|---|---|---|---|"]
     for name, rows in splits.items():
         c = Counter(r.label for r in rows)
         log.append(f"| {name} | {len(rows)} | {len({r.source_id for r in rows})} | "

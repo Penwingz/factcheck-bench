@@ -1,8 +1,14 @@
 import pytest
 
 from factcheck.ingest import Row
-from factcheck.preprocess import (OPINION_EXAMPLES, dedup, is_opinion, normalize,
-                                  split_by_source, split_claims)
+from factcheck.preprocess import (
+    OPINION_EXAMPLES,
+    dedup,
+    is_opinion,
+    normalize,
+    split_by_source,
+    split_claims,
+)
 
 
 def test_offsets_round_trip_after_normalization():

@@ -13,9 +13,9 @@ from . import LABELS
 def per_class_prf(gold: list[str], pred: list[str]) -> dict[str, dict[str, float]]:
     out = {}
     for lab in LABELS:
-        tp = sum(g == lab and p == lab for g, p in zip(gold, pred))
-        fp = sum(g != lab and p == lab for g, p in zip(gold, pred))
-        fn = sum(g == lab and p != lab for g, p in zip(gold, pred))
+        tp = sum(g == lab and p == lab for g, p in zip(gold, pred, strict=True))
+        fp = sum(g != lab and p == lab for g, p in zip(gold, pred, strict=True))
+        fn = sum(g == lab and p != lab for g, p in zip(gold, pred, strict=True))
         prec = tp / (tp + fp) if tp + fp else 0.0
         rec = tp / (tp + fn) if tp + fn else 0.0
         f1 = 2 * prec * rec / (prec + rec) if prec + rec else 0.0
@@ -29,21 +29,21 @@ def macro_f1(gold: list[str], pred: list[str]) -> float:
 
 
 def accuracy(gold: list[str], pred: list[str]) -> float:
-    return sum(g == p for g, p in zip(gold, pred)) / len(gold) if gold else 0.0
+    return sum(g == p for g, p in zip(gold, pred, strict=True)) / len(gold) if gold else 0.0
 
 
 def confusion(gold: list[str], pred: list[str]) -> list[list[int]]:
     """Rows = gold, columns = predicted, both in LABELS order."""
     idx = {lab: i for i, lab in enumerate(LABELS)}
     m = [[0] * len(LABELS) for _ in LABELS]
-    for g, p in zip(gold, pred):
+    for g, p in zip(gold, pred, strict=True):
         m[idx[g]][idx[p]] += 1
     return m
 
 
 def recall_hits(gold_sets: list[set], retrieved: list[list], k: int) -> list[int]:
     """1 per claim if any gold sentence id is in the top k, else 0."""
-    return [int(bool(g & set(r[:k]))) for g, r in zip(gold_sets, retrieved)]
+    return [int(bool(g & set(r[:k]))) for g, r in zip(gold_sets, retrieved, strict=True)]
 
 
 def fever_hits(gold: list[str], pred: list[str], gold_sets: list[set],
@@ -52,7 +52,7 @@ def fever_hits(gold: list[str], pred: list[str], gold_sets: list[set],
     least one gold sentence in the top k. Single-sentence approximation: the official
     score needs a complete gold evidence set, which matters for multi-sentence sets."""
     return [int(g == p and (g == LABELS[2] or bool(gs & set(r[:k]))))
-            for g, p, gs, r in zip(gold, pred, gold_sets, retrieved)]
+            for g, p, gs, r in zip(gold, pred, gold_sets, retrieved, strict=True)]
 
 
 def span_char_counts(gold: list[list[int]], pred: list[list[int]]) -> tuple[int, int, int]:
@@ -72,7 +72,7 @@ def span_f1_from_counts(counts: list[tuple[int, int, int]]) -> dict[str, float]:
 
 
 def span_char_f1(gold: list[list[list[int]]], pred: list[list[list[int]]]) -> dict[str, float]:
-    return span_f1_from_counts([span_char_counts(g, p) for g, p in zip(gold, pred)])
+    return span_f1_from_counts([span_char_counts(g, p) for g, p in zip(gold, pred, strict=True)])
 
 
 def bootstrap_ci(fn, items: list, n_boot: int = 1000, seed: int = 13,
@@ -86,6 +86,23 @@ def bootstrap_ci(fn, items: list, n_boot: int = 1000, seed: int = 13,
     stats = [fn([items[i] for i in rng.integers(0, n, n)]) for _ in range(n_boot)]
     lo, hi = np.quantile(stats, [alpha / 2, 1 - alpha / 2])
     return float(point), float(lo), float(hi)
+
+
+def bootstrap_many(fn, items: list, n_boot: int = 1000, seed: int = 13,
+                   alpha: float = 0.05) -> dict:
+    """Like bootstrap_ci for an fn returning a flat dict of floats; one resampling
+    pass serves every key. Returns {key: (point, lo, hi)}."""
+    point = fn(items)
+    if not items:
+        return {k: (v, v, v) for k, v in point.items()}
+    rng = np.random.default_rng(seed)
+    n = len(items)
+    stats = [fn([items[i] for i in rng.integers(0, n, n)]) for _ in range(n_boot)]
+    out = {}
+    for k, v in point.items():
+        lo, hi = np.quantile([s[k] for s in stats], [alpha / 2, 1 - alpha / 2])
+        out[k] = (float(v), float(lo), float(hi))
+    return out
 
 
 def mean(xs: list) -> float:

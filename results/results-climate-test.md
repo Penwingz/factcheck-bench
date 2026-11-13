@@ -5,7 +5,7 @@
 ## Run facts
 - Split: **climate-test**, claims evaluated: **1351** (no cap; throughput was above 5 pairs/s)
 - Labels: Climate-FEVER crowd, 5 votes per evidence sentence. No re-annotation by this project.
-- NLI throughput: **76.0 claim-evidence pairs/s** on CPU (arm64 Darwin, batch 32, cross-encoder/nli-deberta-v3-xsmall). Retrieval: 225 queries/s.
+- NLI throughput: **82.0 claim-evidence pairs/s** on CPU (arm64 Darwin, batch 32, cross-encoder/nli-deberta-v3-xsmall). Retrieval: 241 queries/s.
 - Thresholds used for the tuned system: SUPPORTS if max P(entailment) ≥ 0.95, REFUTES if max P(contradiction) ≥ 0.99, else NOT ENOUGH INFO. Tuned for macro-F1 on **FEVER dev only**.
 - Claims flagged as opinion (predicted NOT ENOUGH INFO without checking): 25
 
@@ -23,13 +23,15 @@
 
 ### NLI system, thresholds 0.5/0.5 (untuned)
 
+Per class, value [95% CI]; n = 1351, split climate-test, annotators: Climate-FEVER crowd, 5 votes per evidence sentence.
+
 | Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
-| SUPPORTS | 0.775 | 0.134 | 0.228 | 643 |
-| REFUTES | 0.262 | 0.671 | 0.377 | 240 |
-| NOT ENOUGH INFO | 0.351 | 0.470 | 0.402 | 468 |
+| SUPPORTS | 0.775 [0.698, 0.851] | 0.134 [0.108, 0.161] | 0.228 [0.188, 0.269] | 643 |
+| REFUTES | 0.262 [0.229, 0.296] | 0.671 [0.616, 0.733] | 0.377 [0.336, 0.417] | 240 |
+| NOT ENOUGH INFO | 0.351 [0.315, 0.389] | 0.470 [0.427, 0.512] | 0.402 [0.367, 0.439] | 468 |
 
-Confusion matrix (rows = gold, columns = predicted):
+Confusion matrix, counts (rows = gold, columns = predicted; n = 1351):
 
 | gold \ pred | SUPPORTS | REFUTES | NEI |
 |---|---|---|---|
@@ -39,13 +41,15 @@ Confusion matrix (rows = gold, columns = predicted):
 
 ### NLI system, thresholds 0.95/0.99 (tuned on FEVER dev)
 
+Per class, value [95% CI]; n = 1351, split climate-test, annotators: Climate-FEVER crowd, 5 votes per evidence sentence.
+
 | Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
-| SUPPORTS | 0.844 | 0.059 | 0.110 | 643 |
-| REFUTES | 0.474 | 0.267 | 0.341 | 240 |
-| NOT ENOUGH INFO | 0.365 | 0.912 | 0.521 | 468 |
+| SUPPORTS | 0.844 [0.744, 0.941] | 0.059 [0.042, 0.077] | 0.110 [0.079, 0.142] | 643 |
+| REFUTES | 0.474 [0.400, 0.562] | 0.267 [0.215, 0.324] | 0.341 [0.283, 0.402] | 240 |
+| NOT ENOUGH INFO | 0.365 [0.339, 0.392] | 0.912 [0.889, 0.938] | 0.521 [0.493, 0.549] | 468 |
 
-Confusion matrix (rows = gold, columns = predicted):
+Confusion matrix, counts (rows = gold, columns = predicted; n = 1351):
 
 | gold \ pred | SUPPORTS | REFUTES | NEI |
 |---|---|---|---|
@@ -55,13 +59,15 @@ Confusion matrix (rows = gold, columns = predicted):
 
 ### Majority class (from FEVER train)
 
+Per class, value [95% CI]; n = 1351, split climate-test, annotators: Climate-FEVER crowd, 5 votes per evidence sentence.
+
 | Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
-| SUPPORTS | 0.476 | 1.000 | 0.645 | 643 |
-| REFUTES | 0.000 | 0.000 | 0.000 | 240 |
-| NOT ENOUGH INFO | 0.000 | 0.000 | 0.000 | 468 |
+| SUPPORTS | 0.476 [0.451, 0.503] | 1.000 [1.000, 1.000] | 0.645 [0.622, 0.670] | 643 |
+| REFUTES | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 240 |
+| NOT ENOUGH INFO | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 468 |
 
-Confusion matrix (rows = gold, columns = predicted):
+Confusion matrix, counts (rows = gold, columns = predicted; n = 1351):
 
 | gold \ pred | SUPPORTS | REFUTES | NEI |
 |---|---|---|---|
@@ -71,13 +77,15 @@ Confusion matrix (rows = gold, columns = predicted):
 
 ### Claim-only TF-IDF + LR (trained on FEVER train)
 
+Per class, value [95% CI]; n = 1351, split climate-test, annotators: Climate-FEVER crowd, 5 votes per evidence sentence.
+
 | Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
-| SUPPORTS | 0.491 | 0.170 | 0.252 | 643 |
-| REFUTES | 0.263 | 0.350 | 0.301 | 240 |
-| NOT ENOUGH INFO | 0.351 | 0.607 | 0.444 | 468 |
+| SUPPORTS | 0.491 [0.428, 0.556] | 0.170 [0.141, 0.200] | 0.252 [0.215, 0.292] | 643 |
+| REFUTES | 0.263 [0.213, 0.307] | 0.350 [0.290, 0.410] | 0.301 [0.250, 0.345] | 240 |
+| NOT ENOUGH INFO | 0.351 [0.320, 0.384] | 0.607 [0.564, 0.652] | 0.444 [0.412, 0.477] | 468 |
 
-Confusion matrix (rows = gold, columns = predicted):
+Confusion matrix, counts (rows = gold, columns = predicted; n = 1351):
 
 | gold \ pred | SUPPORTS | REFUTES | NEI |
 |---|---|---|---|
@@ -106,11 +114,14 @@ The public datasets have no span labels, so spans are scored only on `data/span_
 
 | Metric | Value | 95% CI | n | Split | Annotators |
 |---|---|---|---|---|---|
-| Span char F1, rule only, given gold evidence | 0.856 | [0.640, 1.000] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
-| Span char F1, end-to-end check() with gold evidence | 0.647 | [0.325, 0.857] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
+| Span char f1, rule only, given gold evidence | 0.856 | [0.640, 1.000] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
+| Span char precision, rule only, given gold evidence | 1.000 | [1.000, 1.000] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
+| Span char recall, rule only, given gold evidence | 0.748 | [0.471, 1.000] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
+| Span char f1, end-to-end check() with gold evidence | 0.647 | [0.325, 0.857] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
+| Span char precision, end-to-end check() with gold evidence | 1.000 | [1.000, 1.000] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
+| Span char recall, end-to-end check() with gold evidence | 0.478 | [0.194, 0.750] | 20 | handbuilt | 1 (Claude, hand-built; not a human annotator) |
 
-- Rule only: precision 1.000, recall 0.748.
-- End to end: precision 1.000, recall 0.478; spans appear only when the label is REFUTES. Label accuracy on these 20 claims: 0.750.
+End to end, spans appear only when the label is REFUTES. Label accuracy of check() on these 20 claims: 0.750.
 
 | Claim | Gold label | Predicted | Gold span | Predicted spans |
 |---|---|---|---|---|

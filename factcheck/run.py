@@ -14,7 +14,8 @@ import time
 from dataclasses import asdict
 from datetime import date
 
-from . import LABELS, SCHEMA_VERSION, config, evaluate as ev, spans
+from . import LABELS, SCHEMA_VERSION, config, spans
+from . import evaluate as ev
 from .ingest import load
 from .preprocess import is_opinion, normalize, split_claims
 from .retrieve import Evidence, Index
@@ -82,9 +83,9 @@ def check(claim: str, evidence: list[str] | None = None,
     probs = _get_nli().probs([(e.text, claim) for e in items])
     label, best = aggregate(probs, thresholds or load_thresholds())
     used = [{"text": e.text, "source_id": e.source_id,
-             "scores": dict(zip(LABELS, map(float, p))), "decisive": i == best}
-            for i, (e, p) in enumerate(zip(items, probs))]
-    scores = dict(zip(LABELS, map(float, probs[best]))) if best >= 0 else None
+             "scores": dict(zip(LABELS, map(float, p), strict=True)), "decisive": i == best}
+            for i, (e, p) in enumerate(zip(items, probs, strict=True))]
+    scores = dict(zip(LABELS, map(float, probs[best]), strict=True)) if best >= 0 else None
     wrong = spans.find(claim, items[best].text) if label == R else []
     return _result(label, scores, used, wrong, False)
 
@@ -117,7 +118,7 @@ class ProbCache:
                      if self.key(p, h) not in self.data}.items())
         t = time.perf_counter()
         if todo:
-            for (k, _), row in zip(todo, nli.probs([ph for _, ph in todo])):
+            for (k, _), row in zip(todo, nli.probs([ph for _, ph in todo]), strict=True):
                 self.data[k] = row
             self.path.write_bytes(pickle.dumps(self.data))
         return len(todo), time.perf_counter() - t
@@ -140,19 +141,34 @@ def ci_line(name, point_lo_hi, n, split, annotators, fmt="{:.3f}") -> str:
             f"{split} | {annotators} |")
 
 
+def _label_stats(items) -> dict:
+    """Every label metric for (gold, pred) pairs as one flat dict, so a single
+    bootstrap pass gives CIs for all of them."""
+    gold, pred = [g for g, _ in items], [p for _, p in items]
+    out = {"macro_f1": ev.macro_f1(gold, pred), "accuracy": ev.accuracy(gold, pred)}
+    for lab, pc in ev.per_class_prf(gold, pred).items():
+        out.update({f"{lab}|{k}": pc[k] for k in ("precision", "recall", "f1")})
+    return out
+
+
 def label_metrics(gold, pred):
-    items = list(zip(gold, pred))
-    return {
-        "macro_f1": ev.bootstrap_ci(lambda it: ev.macro_f1([g for g, _ in it], [p for _, p in it]), items),
-        "accuracy": ev.bootstrap_ci(lambda it: ev.accuracy([g for g, _ in it], [p for _, p in it]), items),
-        "per_class": ev.per_class_prf(gold, pred),
-        "confusion": ev.confusion(gold, pred),
-        "n": len(gold),
-    }
+    stats = ev.bootstrap_many(_label_stats, list(zip(gold, pred, strict=True)))
+    per_class = {lab: {k: stats[f"{lab}|{k}"] for k in ("precision", "recall", "f1")}
+                 for lab in LABELS}
+    for lab in LABELS:
+        per_class[lab]["support"] = sum(g == lab for g in gold)
+    return {"macro_f1": stats["macro_f1"], "accuracy": stats["accuracy"],
+            "per_class": per_class, "confusion": ev.confusion(gold, pred), "n": len(gold)}
+
+
+def fmt_ci(point_lo_hi) -> str:
+    p, lo, hi = point_lo_hi
+    return f"{p:.3f} [{lo:.3f}, {hi:.3f}]"
 
 
 def main(argv=None) -> None:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--split", choices=["dev", "test"], default="dev")
     ap.add_argument("--dataset", choices=["fever", "climate"], default="fever")
     ap.add_argument("--limit", type=int, default=None, help="evaluate at most N claims")
@@ -164,7 +180,8 @@ def main(argv=None) -> None:
         sys.exit("--full-wiki is not implemented: it needs a >500 MB download, which "
                  "must be approved first. The default small pool is used otherwise.")
     if args.dataset == "climate" and args.split == "dev":
-        sys.exit("Climate-FEVER is evaluation only: use --split test (thresholds come from FEVER dev).")
+        sys.exit("Climate-FEVER is evaluation only: use --split test "
+                 "(thresholds come from FEVER dev).")
 
     d = config.setup_caches()
     proc = d / "processed"
@@ -186,32 +203,32 @@ def main(argv=None) -> None:
     retrieved = [index.top_k(r.claim, TOP_K) for r in rows]
     retrieval_qps = len(rows) / (time.perf_counter() - t0)
 
-    pairs = [(e.text, r.claim) for r, hits in zip(rows, retrieved) for e in hits]
+    pairs = [(e.text, r.claim) for r, hits in zip(rows, retrieved, strict=True) for e in hits]
     pps = measure_throughput(nli, pairs)
     capped = False
     if args.limit or pps < MIN_PAIRS_PER_SEC:
         cap = args.limit or CAP_IF_SLOW
         capped = len(rows) > cap
         rows, retrieved = rows[:cap], retrieved[:cap]
-        pairs = [(e.text, r.claim) for r, hits in zip(rows, retrieved) for e in hits]
+        pairs = [(e.text, r.claim) for r, hits in zip(rows, retrieved, strict=True) for e in hits]
 
     cache = ProbCache(d / "index" / "nli_cache.pkl")
     n_new, secs = cache.fill(nli, pairs)
     prob_sets = []
     import numpy as np
-    for r, hits in zip(rows, retrieved):
+    for r, hits in zip(rows, retrieved, strict=True):
         prob_sets.append(np.array([cache.get(e.text, r.claim) for e in hits]).reshape(-1, 3))
 
     gold = [r.label for r in rows]
     opinion = [r.is_opinion for r in rows]
 
     def predict(th):
-        return [N if op else aggregate(p, th)[0] for p, op in zip(prob_sets, opinion)]
+        return [N if op else aggregate(p, th)[0] for p, op in zip(prob_sets, opinion, strict=True)]
 
     default_th = Thresholds()
     if args.split == "dev" and args.dataset == "fever":
-        tuned_th, _ = tune([p for p, op in zip(prob_sets, opinion) if not op],
-                           [g for g, op in zip(gold, opinion) if not op])
+        tuned_th, _ = tune([p for p, op in zip(prob_sets, opinion, strict=True) if not op],
+                           [g for g, op in zip(gold, opinion, strict=True) if not op])
         RESULTS.mkdir(exist_ok=True)
         (RESULTS / "thresholds.json").write_text(json.dumps(
             {**asdict(tuned_th), "tuned_on": "fever-dev", "metric": "macro-F1",
@@ -227,7 +244,8 @@ def main(argv=None) -> None:
                                         [r.claim for r in rows])
     systems = {
         "NLI system, thresholds 0.5/0.5 (untuned)": pred_default,
-        f"NLI system, thresholds {tuned_th.supports:.2f}/{tuned_th.refutes:.2f} (tuned on FEVER dev)": pred_tuned,
+        (f"NLI system, thresholds {tuned_th.supports:.2f}/{tuned_th.refutes:.2f} "
+         "(tuned on FEVER dev)"): pred_tuned,
         "Majority class (from FEVER train)": pred_major,
         "Claim-only TF-IDF + LR (trained on FEVER train)": pred_claim,
     }
@@ -248,12 +266,10 @@ def main(argv=None) -> None:
     rule_pred = [spans.find(r.claim, r.evidence[0]["text"]) for r in hand]
     e2e = [check(r.claim, [r.evidence[0]["text"]], tuned_th) for r in hand]
     e2e_pred = [x["wrong_spans"] for x in e2e]
-    span_rule = ev.bootstrap_ci(lambda c: ev.span_f1_from_counts(c)["f1"],
-                                [ev.span_char_counts(g, p) for g, p in zip(hgold, rule_pred)])
-    span_e2e = ev.bootstrap_ci(lambda c: ev.span_f1_from_counts(c)["f1"],
-                               [ev.span_char_counts(g, p) for g, p in zip(hgold, e2e_pred)])
-    span_rule_prf = ev.span_char_f1(hgold, rule_pred)
-    span_e2e_prf = ev.span_char_f1(hgold, e2e_pred)
+    def span_cis(pred_spans):
+        counts = [ev.span_char_counts(g, p) for g, p in zip(hgold, pred_spans, strict=True)]
+        return {k: list(v) for k, v in ev.bootstrap_many(ev.span_f1_from_counts, counts).items()}
+
     hand_label_acc = ev.accuracy([r.label for r in hand], [x["label"] for x in e2e])
 
     metrics = {
@@ -263,19 +279,19 @@ def main(argv=None) -> None:
                        "new_pairs_scored": n_new, "seconds": secs,
                        "machine": f"{platform.machine()} {platform.system()}"},
         "thresholds": asdict(tuned_th),
-        "label": {k: {**v, "macro_f1": list(v["macro_f1"]), "accuracy": list(v["accuracy"])}
-                  for k, v in lm.items()},
+        "label": lm,
         "retrieval": {"n": len(has_gold), **{f"recall@{k}": list(v) for k, v in recall.items()}},
         "fever_style_strict": {"n": len(rows), "score": list(fever)},
         "spans_handbuilt": {"n": len(hand), "n_refutes": sum(r.label == R for r in hand),
-                            "rule_with_gold_evidence": {**span_rule_prf, "f1_ci": list(span_rule)},
-                            "end_to_end_check": {**span_e2e_prf, "f1_ci": list(span_e2e),
+                            "rule_with_gold_evidence": span_cis(rule_pred),
+                            "end_to_end_check": {**span_cis(e2e_pred),
                                                  "label_accuracy": hand_label_acc}},
         "opinion_flagged": sum(opinion),
     }
     RESULTS.mkdir(exist_ok=True)
     stem = "results" if split_name == "fever-dev" else f"results-{split_name}"
-    (RESULTS / f"{stem.replace('results', 'metrics')}.json").write_text(json.dumps(metrics, indent=2))
+    metrics_path = RESULTS / f"{stem.replace('results', 'metrics')}.json"
+    metrics_path.write_text(json.dumps(metrics, indent=2))
     md = render(metrics, lm, rows, retrieved, prob_sets, pred_tuned, hand, e2e, tuned_th)
     (RESULTS / f"{stem}.md").write_text(md)
     print(md)
@@ -307,14 +323,15 @@ def render(m, lm, rows, retrieved, prob_sets, pred, hand, e2e, th) -> str:
         L.append(ci_line(f"{name}: macro-F1", v["macro_f1"], n, split, ann))
         L.append(ci_line(f"{name}: accuracy", v["accuracy"], n, split, ann))
     for name, v in lm.items():
-        L += ["", f"### {name}", "", "| Class | Precision | Recall | F1 | Support |",
-              "|---|---|---|---|---|"]
+        L += ["", f"### {name}", "",
+              f"Per class, value [95% CI]; n = {n}, split {split}, annotators: {ann}.", "",
+              "| Class | Precision | Recall | F1 | Support |", "|---|---|---|---|---|"]
         for lab, pc in v["per_class"].items():
-            L.append(f"| {lab} | {pc['precision']:.3f} | {pc['recall']:.3f} | {pc['f1']:.3f} | "
-                     f"{pc['support']} |")
-        L += ["", "Confusion matrix (rows = gold, columns = predicted):", "",
+            L.append(f"| {lab} | {fmt_ci(pc['precision'])} | {fmt_ci(pc['recall'])} | "
+                     f"{fmt_ci(pc['f1'])} | {pc['support']} |")
+        L += ["", f"Confusion matrix, counts (rows = gold, columns = predicted; n = {n}):", "",
               "| gold \\ pred | SUPPORTS | REFUTES | NEI |", "|---|---|---|---|"]
-        for lab, row in zip(LABELS, v["confusion"]):
+        for lab, row in zip(LABELS, v["confusion"], strict=True):
             L.append(f"| {lab} | " + " | ".join(map(str, row)) + " |")
     r = m["retrieval"]
     L += ["", "## 2. Retrieval (BM25, scored separately from the label)",
@@ -335,25 +352,23 @@ def render(m, lm, rows, retrieved, prob_sets, pred, hand, e2e, th) -> str:
           f"`data/span_gold_handbuilt.jsonl`: {s['n']} claims ({s['n_refutes']} REFUTES, the "
           "rest SUPPORTS). Three REFUTES cases are negation or common-noun swaps, which the "
           "rules are known not to handle. Treat this as a smoke test, not a benchmark.", ""] + hdr
-    L.append(ci_line("Span char F1, rule only, given gold evidence", s["rule_with_gold_evidence"]["f1_ci"],
-                     s["n"], "handbuilt", hann))
-    L.append(ci_line("Span char F1, end-to-end check() with gold evidence",
-                     s["end_to_end_check"]["f1_ci"], s["n"], "handbuilt", hann))
-    L += ["", f"- Rule only: precision {s['rule_with_gold_evidence']['precision']:.3f}, recall "
-          f"{s['rule_with_gold_evidence']['recall']:.3f}.",
-          f"- End to end: precision {s['end_to_end_check']['precision']:.3f}, recall "
-          f"{s['end_to_end_check']['recall']:.3f}; spans appear only when the label is "
-          f"REFUTES. Label accuracy on these {s['n']} claims: "
-          f"{s['end_to_end_check']['label_accuracy']:.3f}.", "",
-          "| Claim | Gold label | Predicted | Gold span | Predicted spans |", "|---|---|---|---|---|"]
-    for r_, x in zip(hand, e2e):
+    for mode, title in (("rule_with_gold_evidence", "rule only, given gold evidence"),
+                        ("end_to_end_check", "end-to-end check() with gold evidence")):
+        for k in ("f1", "precision", "recall"):
+            L.append(ci_line(f"Span char {k}, {title}", s[mode][k], s["n"], "handbuilt", hann))
+    L += ["", "End to end, spans appear only when the label is REFUTES. Label accuracy of "
+          f"check() on these {s['n']} claims: {s['end_to_end_check']['label_accuracy']:.3f}.", "",
+          "| Claim | Gold label | Predicted | Gold span | Predicted spans |",
+          "|---|---|---|---|---|"]
+    for r_, x in zip(hand, e2e, strict=True):
         g = ", ".join(r_.claim[a["start"]:a["end"]] for a in r_.wrong_spans) or "-"
         p = ", ".join(r_.claim[a:b] for a, b in x["wrong_spans"]) or "-"
         L.append(f"| {r_.claim} | {r_.label} | {x['label']} | {g} | {p} |")
     L += ["", "## 5. Worked examples (tuned system)", ""]
-    shown, used_sources = 0, set()
+    used_sources = set()
     for want_correct in (True, False):
-        for row, hits, probs, p in zip(rows, retrieved, prob_sets, pred):
+        shown = 0
+        for row, hits, probs, p in zip(rows, retrieved, prob_sets, pred, strict=True):
             if ((p == row.label) != want_correct or row.is_opinion or not hits
                     or row.source_id in used_sources):
                 continue
@@ -367,7 +382,7 @@ def render(m, lm, rows, retrieved, prob_sets, pred, hand, e2e, th) -> str:
                 L.append("  - wrong spans: " + (", ".join(
                     f"`{row.claim[a:b]}`" for a, b in spans.find(row.claim, e.text)) or "none"))
             shown += 1
-            if shown % 3 == 0:
+            if shown == 3:
                 break
     L += ["", "## Caveats",
           "- **Tuned on this split (dev only):** the tuned thresholds were chosen on FEVER dev, "
