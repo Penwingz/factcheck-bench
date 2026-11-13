@@ -1,0 +1,75 @@
+# Data card
+
+*Schema version 1.0. Last updated 2026-11-14.*
+
+## Summary
+This repo uses no labels of its own. All labelled rows come from two public datasets, re-shaped into the project schema:
+
+| Set | Rows | SUPPORTS | REFUTES | NOT ENOUGH INFO | Use |
+|---|---|---|---|---|---|
+| FEVER sample | 3,000 | 1,000 | 1,000 | 1,000 | split 70/15/15 by source into train / dev / test |
+| Climate-FEVER | 1,381 | 654 | 253 | 474 | evaluation only (never tuned on) |
+| Hand-built span set | see `data/span_gold_handbuilt.jsonl` | | | | span character F1 only |
+
+The sample is balanced by construction. The real FEVER label distribution differs, so the numbers in this repo don't describe FEVER as a whole.
+
+## Collection
+- **FEVER claims** come from `copenlu/fever_gold_evidence` on Hugging Face, file `valid.jsonl` (15,935 claims). That file pairs each FEVER claim with the *text* of its gold evidence sentences, so the 7.25 GB Wikipedia dump isn't needed. I drew a stratified sample of 1,000 claims per label with seed 13. NEI rows in this file carry retrieved, non-gold sentences. I keep those out of the row's `evidence` field but add them to the evidence pool.
+- **FEVER evidence pool** (30,221 sentences) has two parts:
+  - every evidence sentence in `valid.jsonl`, including those of claims not sampled;
+  - 24,000 sentences drawn with seed 13 from `train.jsonl` evidence, as distractors.
+
+  Because the pool is built around gold evidence, retrieval is much easier here than over all of Wikipedia.
+- **Climate-FEVER** comes from `tdiggelm/climate_fever`, a parquet file of 1,535 claims with 5 evidence sentences each. The 154 DISPUTED claims are dropped, because the schema has three labels. A claim's gold evidence is the set of its sentences whose own label equals the claim label. The pool is all 4,863 unique evidence sentences.
+- The labels are the original crowd labels. **I added no labels and changed none.**
+
+## Label definitions
+| Label | Meaning here | Edge cases |
+|---|---|---|
+| SUPPORTS | The retrieved evidence entails the claim | Means "supported by our pool", not "true in the world" |
+| REFUTES | The retrieved evidence contradicts the claim | A contradiction found in an outdated sentence still counts |
+| NOT ENOUGH INFO | The pool holds nothing that settles it | Means "not in our pool", not "unknowable" |
+
+AVeriTeC-style "conflicting evidence" and Climate-FEVER "DISPUTED" are **dropped**, not mapped.
+
+## Fields
+| Field | Type | Notes |
+|---|---|---|
+| `id` | str | `fever-<hash>` or `climate-<claim_id>` |
+| `source_id` | str | FEVER: the Wikipedia page of the first evidence sentence (for NEI, the page of the retrieved sentence). Climate: the claim id. Used for the split by source. |
+| `raw_text` | str | Never modified. In both sources it equals the claim. |
+| `claim`, `claim_start`, `claim_end` | str, int, int | `raw_text[claim_start:claim_end] == claim` |
+| `label` | enum | SUPPORTS / REFUTES / NOT ENOUGH INFO |
+| `evidence` | list | `{doc_id, sentence_id, text}`. Gold evidence only; empty for NEI. |
+| `wrong_spans` | list | `{start, end}` offsets into `claim`. **Empty in FEVER and Climate-FEVER**, which have no span labels. |
+| `is_opinion` | bool | Set by the rule filter during preprocessing |
+| `annotator` | str | `fever-crowd`, `climate-fever-crowd (5 votes per evidence)`, or `claude-handbuilt` |
+| `annotated_at` | str | The source's release year. Per-row dates aren't published. |
+| `schema_version` | str | `"1.0"` |
+
+Validation runs in `factcheck/ingest.py::validate`:
+- claim offsets round-trip;
+- spans are non-empty and inside the claim;
+- spans appear only on REFUTES rows;
+- every REFUTES row has a span. This last rule is enforced **only on the hand-built span set**, because the public sets have no spans.
+
+## Splits
+Rows are grouped by `source_id`, and the groups are shuffled with seed 13 and assigned 70/15/15. No source appears in two splits; `tests/test_preprocess.py` checks this. Counts are in `docs/preprocessing-log.md`.
+
+## Known limits
+- Labels come from a single source per dataset (crowd), with no re-annotation by this project. **The self-relabel agreement study (story S0-3) was not done.**
+- FEVER claims were written by annotators mutating Wikipedia sentences, so they contain known artefacts. The claim-only baseline in `results/results.md` measures how much.
+- The span set is small and labelled by Claude, not by a person, so span F1 is a smoke test, not a benchmark.
+- The pool is seeded with gold evidence (see Collection).
+
+## Licences
+| Source | Licence as listed | Note |
+|---|---|---|
+| copenlu/fever_gold_evidence (FEVER) | CC BY-SA 3.0; the card also lists GPL-3.0 | Wikipedia-derived text |
+| tdiggelm/climate_fever | **unknown** on the card | Evaluation only. Check before redistributing. |
+| cross-encoder/nli-deberta-v3-xsmall (model) | Apache-2.0 | Trained on SNLI and MNLI, not on FEVER |
+
+No data files are committed. They're regenerated by `python -m factcheck.ingest` into the external data directory.
+
+## Changelog
+- 2026-11-14: first version (schema 1.0).
