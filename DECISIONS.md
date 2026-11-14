@@ -22,3 +22,7 @@ Each entry: date, decision, reason. Entries marked *(adopted)* were proposed in 
 | 2026-11-14 | Climate-FEVER DISPUTED claims (154) are dropped, not mapped | The schema has three labels; DISPUTED isn't NEI |
 | 2026-11-14 | Python 3.12 venv on the external SSD, symlinked as `.venv` (gitignored) | The system Python is 3.14, which is too new to trust for torch wheels. The venv is about 1 GB and the internal disk is short of space. |
 | 2026-11-14 | Git identity for this repo only: Penwingz with the GitHub noreply address | rules.md names the main committer; the global identity is left alone for other projects |
+| 2026-11-14 | `pyproject.toml` with pytest `pythonpath = ["."]` | The brief's command is bare `pytest`, which couldn't import the package without it |
+| 2026-11-14 | Bootstrap CIs on per-class P/R/F1 and span P/R/F1, from one resampling pass (`bootstrap_many`) | Rule 3 (every metric has a CI); one pass keeps the runtime low |
+| 2026-11-14 | Relabel sheets show the gold sentence for SUPPORTS/REFUTES and the top BM25 sentence for NEI, with no label column filled | NEI has no gold sentence. Showing the evidence FEVER associated with each claim keeps agreement with FEVER meaningful. |
+| 2026-11-14 | The deck chart is dot-and-whisker, with orange for this system, grey for baselines, and every row labelled directly | Colour never carries meaning alone. The palette was checked with the dataviz validator: normal-vision ΔE 18.5, CVD ΔE 14.5, contrast ≥ 3:1. The grey is deliberately neutral. |
