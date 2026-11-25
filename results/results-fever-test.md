@@ -1,11 +1,11 @@
 # Results: fever-test
 
-*Generated 2026-11-14 by `python -m factcheck.run`. Bootstrap: 1,000 resamples of claims, seed 13, percentile 95% CI. Each number describes one system on one split; none of them is comparable with FEVER or AVeriTeC leaderboards.*
+*Generated 2026-11-25 by `python -m factcheck.run`. Bootstrap: 1,000 resamples of claims, seed 13, percentile 95% CI. Each number describes one system on one split; none of them is comparable with FEVER or AVeriTeC leaderboards.*
 
 ## Run facts
 - Split: **fever-test**, claims evaluated: **396** (no cap; throughput was above 5 pairs/s)
 - Labels: FEVER crowd labels, 1 label per claim as released. No re-annotation by this project.
-- NLI throughput: **92.0 claim-evidence pairs/s** on CPU (arm64 Darwin, batch 32, cross-encoder/nli-deberta-v3-xsmall). Retrieval: 74 queries/s.
+- NLI throughput: **88.9 claim-evidence pairs/s** on CPU (arm64 Darwin, batch 32, cross-encoder/nli-deberta-v3-xsmall). Retrieval: 73 queries/s.
 - Thresholds used for the tuned system: SUPPORTS if max P(entailment) ≥ 0.95, REFUTES if max P(contradiction) ≥ 0.99, else NOT ENOUGH INFO. Tuned for macro-F1 on **FEVER dev only**.
 - Claims flagged as opinion (predicted NOT ENOUGH INFO without checking): 0
 

@@ -3,12 +3,12 @@
   "n_claims": 396,
   "capped": false,
   "annotators": "FEVER crowd labels, 1 label per claim as released",
-  "date": "2026-11-14",
+  "date": "2026-11-25",
   "throughput": {
-    "nli_pairs_per_sec": 92.02310642494385,
-    "retrieval_queries_per_sec": 73.63538042703445,
+    "nli_pairs_per_sec": 88.87119002539922,
+    "retrieval_queries_per_sec": 73.02185567391767,
     "new_pairs_scored": 0,
-    "seconds": 1.458043698221445e-06,
+    "seconds": 3.33995558321476e-07,
     "machine": "arm64 Darwin"
   },
   "thresholds": {

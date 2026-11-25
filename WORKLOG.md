@@ -43,3 +43,12 @@
 - Fill `data/relabel/pass1.csv`; fill `pass2.csv` several days later; run `python -m factcheck.relabel score`.
 - Relevance gate for contradictions (tune on dev).
 - Replace the deck placeholders: presenter name, course and group.
+
+## 2026-11-25
+**Reproduction run**
+- SSD re-mounted (APFS, 401 GB free). `pytest`: 53 passed.
+- Re-ran FEVER dev, FEVER test and Climate-FEVER evaluations. Every metric, CI and threshold is identical to 2026-11-14; only run dates and throughput timings changed (NLI 78–105 pairs/s, still above 5, so no dev cap).
+- `check()` Eiffel Tower / Berlin example: REFUTES (0.998), span `[23, 29]` = "Berlin".
+
+**Next**
+- Unchanged: relabel study (S0-3) and a relevance gate for contradictions.

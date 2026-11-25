@@ -3,12 +3,12 @@
   "n_claims": 1351,
   "capped": false,
   "annotators": "Climate-FEVER crowd, 5 votes per evidence sentence",
-  "date": "2026-11-14",
+  "date": "2026-11-25",
   "throughput": {
-    "nli_pairs_per_sec": 81.9915987537225,
-    "retrieval_queries_per_sec": 240.63195722949564,
+    "nli_pairs_per_sec": 78.42226390743829,
+    "retrieval_queries_per_sec": 239.4183534039454,
     "new_pairs_scored": 0,
-    "seconds": 4.5797787606716156e-07,
+    "seconds": 4.5902561396360397e-07,
     "machine": "arm64 Darwin"
   },
   "thresholds": {
